@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "robotics_project/floatStamped.h"
+#include "robotics_project/customOdom.h"
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -16,6 +17,7 @@ double y=0.0;
 double theta=0.0;
 
 double lastStamp=0.0;
+std::string odom_type="ackerman";
 
 ros::Publisher odom_pub;
 
@@ -46,10 +48,10 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     lastStamp=Vl->header.stamp.toSec();
     
 
-    //exact integration
-    theta=theta+angularVelocity*timeSpan;
-    x=x+rearVelocity*timeSpan*cos(theta);
-    y=y+rearVelocity*timeSpan*sin(theta);
+    //runge-kutta integration
+    theta+=angularVelocity*timeSpan;
+    x+=rearVelocity*timeSpan*cos(theta+(angularVelocity*timeSpan)/2);
+    y+=rearVelocity*timeSpan*sin(theta+(angularVelocity*timeSpan)/2);
 
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
 
@@ -57,7 +59,7 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     geometry_msgs::TransformStamped odom_trans;
     odom_trans.header.stamp = ros::Time::now();
     odom_trans.header.frame_id="odom";
-    odom_trans.child_frame_id="base_footprint";
+    odom_trans.child_frame_id="car";
     odom_trans.transform.translation.x=x;
     odom_trans.transform.translation.y=y;
     odom_trans.transform.translation.z=0.0;
@@ -82,8 +84,11 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     odom.twist.twist.angular.y=0.0;
     odom.twist.twist.angular.z=angularVelocity;
 
-    //publish odom
-    odom_pub.publish(odom);
+    //publish custom odom
+    robotics_project::customOdom custom_odom;
+    custom_odom.odometry=odom;
+    custom_odom.odometry_type=odom_type;
+    odom_pub.publish(custom_odom);
 
     static tf::TransformBroadcaster br;
     tf::Transform transform;//ros structure for tf
@@ -100,7 +105,7 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "ackerman_node");
 
 	ros::NodeHandle n;
-    odom_pub=n.advertise<nav_msgs::Odometry>("odom",60);
+    odom_pub=n.advertise<robotics_project::customOdom>("custom_odom",60);
     ROS_INFO("I'm alive");
 
   	message_filters::Subscriber<robotics_project::floatStamped> subSpeedL(n, "speedL_stamped", 1);

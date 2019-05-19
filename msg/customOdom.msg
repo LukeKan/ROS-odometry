@@ -1,0 +1,2 @@
+string odometry_type
+nav_msgs/Odometry odometry

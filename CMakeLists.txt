@@ -2,17 +2,18 @@ cmake_minimum_required(VERSION 2.8.3)
 project(robotics_project)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs message_generation message_filters tf)##message_generation is a necessary dependence to have if you want custom messages
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs nav_msgs message_generation message_filters tf)##message_generation is a necessary dependence to have if you want custom messages
 
 add_message_files(
  FILES
- floatStamped.msg
-
+  customOdom.msg
+  floatStamped.msg
  )
  
 generate_messages(
    DEPENDENCIES
   std_msgs
+  nav_msgs
  )
 
 
