@@ -9,7 +9,7 @@
 #include <tf/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
 #include <robotics_project/ParametersConfig.h>
-
+#include <string.h>
 
 
 const double WHEEL_BASELINE=1.3;
@@ -122,9 +122,17 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
 }
 
 void dynamicRecCallback(robotics_project::ParametersConfig &config, uint32_t level) {
-    if(config.mode==0)odom_type="ackerman";
-    else odom_type="differential";
-    ROS_INFO("Chosen mode: %s ", odom_type);
+    if(config.mode==0){
+      odom_type="ackerman";
+      ROS_INFO("Changed mode to: Ackerman ");
+    }
+    else {
+      odom_type="differential";
+      ROS_INFO("Changed mode to: Differential ");
+    }
+    x=config.x;
+    y=config.y;
+    ROS_INFO("Setting (x,y) to: (%f,%f)",x,y);
     
 
 }
