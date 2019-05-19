@@ -7,10 +7,15 @@
 #include <geometry_msgs/Quaternion.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
+#include <dynamic_reconfigure/server.h>
+#include <robotics_project/ParametersConfig.h>
 
 
-double WHEEL_BASELINE=1.765f;
-double STEERING_FACTOR=18.0f;
+
+const double WHEEL_BASELINE=1.3;
+const double REAR_FRONT_DISTANCE=1.765;
+const double STEERING_FACTOR=18.0;
+const double PI=3.14159265;
 
 double x=0.0;
 double y=0.0;
@@ -20,20 +25,39 @@ double lastStamp=0.0;
 std::string odom_type="ackerman";
 
 ros::Publisher odom_pub;
+ros::Publisher odomTest;
 
 void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl, 
                            const robotics_project::floatStamped::ConstPtr& Vr, 
                            const robotics_project::floatStamped::ConstPtr& steer){//callback function. ConstPtr is a pointer to the data structure we receive
     
-    //computing velocity
-    double normalizedSteeringAngle=steer->data/STEERING_FACTOR;
-    double frontVelocity=(Vl->data+Vr->data)/2.0f;
-    double angularVelocity=frontVelocity*sin(normalizedSteeringAngle)/WHEEL_BASELINE;
-    double rearVelocity=(angularVelocity*WHEEL_BASELINE)/tan(normalizedSteeringAngle);
-    double Vx=rearVelocity;
-    double Vy=0.0;
+    double rearVelocity;
+    double angularVelocity;
+    double Vx;
+    double Vy; 
 
-    ROS_INFO("V: [%f], angularVelocity: [%f]", rearVelocity,angularVelocity);
+    //computing velocity
+    if(odom_type=="ackerman"){
+      double normalizedSteeringAngle=steer->data/STEERING_FACTOR;   
+      rearVelocity=(Vl->data+Vr->data)/2.0;
+      angularVelocity=rearVelocity*(tan(normalizedSteeringAngle*PI/180));
+      angularVelocity=angularVelocity/REAR_FRONT_DISTANCE;
+      Vx=rearVelocity;
+      Vy=0.0;
+    } else if(odom_type=="differential")
+    {
+      rearVelocity = (Vl->data+Vr->data)/2.0f;
+
+      angularVelocity = (Vr->data - Vl->data)/WHEEL_BASELINE;
+      Vx=rearVelocity*cos(theta);
+      Vy=rearVelocity*sin(theta);
+    }
+    
+
+    
+
+    ROS_INFO("V: [%f], w: [%f]", rearVelocity,angularVelocity);
+
 
     //computing dt
     double timeSpan;
@@ -46,12 +70,11 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
       timeSpan= Vl->header.stamp.toSec()- lastStamp;
     }
     lastStamp=Vl->header.stamp.toSec();
-    
 
     //runge-kutta integration
-    theta+=angularVelocity*timeSpan;
     x+=rearVelocity*timeSpan*cos(theta+(angularVelocity*timeSpan)/2);
     y+=rearVelocity*timeSpan*sin(theta+(angularVelocity*timeSpan)/2);
+    theta+=angularVelocity*timeSpan;
 
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
 
@@ -75,7 +98,7 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     odom.pose.pose.position.z=0.0;
     odom.pose.pose.orientation=odom_quat;
 
-    odom.child_frame_id="base_footprint";
+    odom.child_frame_id="car";
     odom.twist.twist.linear.x=Vx;
     odom.twist.twist.linear.y=Vy;
     odom.twist.twist.linear.z=0.0;
@@ -88,6 +111,7 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     robotics_project::customOdom custom_odom;
     custom_odom.odometry=odom;
     custom_odom.odometry_type=odom_type;
+    odomTest.publish(odom);
     odom_pub.publish(custom_odom);
 
     static tf::TransformBroadcaster br;
@@ -102,10 +126,11 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
 
 int main(int argc, char **argv){
   	
-	ros::init(argc, argv, "ackerman_node");
+	ros::init(argc, argv, "odometry_node");
 
 	ros::NodeHandle n;
     odom_pub=n.advertise<robotics_project::customOdom>("custom_odom",60);
+    odomTest=n.advertise<nav_msgs::Odometry>("odom",60);
     ROS_INFO("I'm alive");
 
   	message_filters::Subscriber<robotics_project::floatStamped> subSpeedL(n, "speedL_stamped", 1);
