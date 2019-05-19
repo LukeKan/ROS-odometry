@@ -31,7 +31,7 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
                            const robotics_project::floatStamped::ConstPtr& Vr, 
                            const robotics_project::floatStamped::ConstPtr& steer){//callback function. ConstPtr is a pointer to the data structure we receive
     
-    double rearVelocity;
+    double rearVelocity = (Vl->data+Vr->data)/2.0;;
     double angularVelocity;
     double Vx;
     double Vy; 
@@ -39,15 +39,12 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
     //computing velocity
     if(odom_type=="ackerman"){
       double normalizedSteeringAngle=steer->data/STEERING_FACTOR;   
-      rearVelocity=(Vl->data+Vr->data)/2.0;
       angularVelocity=rearVelocity*(tan(normalizedSteeringAngle*PI/180));
       angularVelocity=angularVelocity/REAR_FRONT_DISTANCE;
       Vx=rearVelocity;
       Vy=0.0;
     } else if(odom_type=="differential")
     {
-      rearVelocity = (Vl->data+Vr->data)/2.0f;
-
       angularVelocity = (Vr->data - Vl->data)/WHEEL_BASELINE;
       Vx=rearVelocity*cos(theta);
       Vy=rearVelocity*sin(theta);
@@ -124,6 +121,15 @@ void ackermanDriveCalculus(const robotics_project::floatStamped::ConstPtr& Vl,
 
 }
 
+void dynamicRecCallback(robotics_project::ParametersConfig &config, uint32_t level) {
+    if(config.mode==0)odom_type="ackerman";
+    else odom_type="differential";
+    ROS_INFO("Chosen mode: %s ", odom_type);
+    
+
+}
+
+
 int main(int argc, char **argv){
   	
 	ros::init(argc, argv, "odometry_node");
@@ -146,6 +152,11 @@ int main(int argc, char **argv){
     //message_filters::TimeSynchronizer<robotics_project::floatStamped, robotics_project::floatStamped, robotics_project::floatStamped> sync(subSpeedL, subSpeedR, subSteer, 10);
     //sync.registerCallback(boost::bind(&ackermanDriveCalculus, _1, _2, _3));
   
+    dynamic_reconfigure::Server<robotics_project::ParametersConfig> server;
+	  dynamic_reconfigure::Server<robotics_project::ParametersConfig>::CallbackType f;
+	  f = boost::bind(&dynamicRecCallback, _1,_2);
+	  server.setCallback(f);
+
   	ros::spin();
 
     return 0;
