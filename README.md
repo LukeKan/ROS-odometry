@@ -5,40 +5,40 @@ through the Ackerman model and the Differential drive kinematics.
 It is possible to **dynamically reconfigure** and reset the 3 DoF of the car (x ,y, theta).
 In order to switch between the two kinds of odometry, it is possible to use the dynamic_reconfigure node.
 The result of the odometry computation is packed inside the Odom message, which contains:
-1.nav_msgs/Odometry for the odometry values;
-2.string for the kind of odometry.
+1. nav_msgs/Odometry for the odometry values;
+2. string for the kind of odometry.
 The program is run through the ROS middleware.
 
-#Description of the files inside the archive:
+# Description of the files inside the archive:
 
--CMakeLists.txt : 
+- CMakeLists.txt : 
   the file contains:
-  1.the packages required by the node:
-      -nav_msgs, used for the Odometry class;
-      -tf, used to publish the tf;
-      -message_generation, necessary to create and use custom messages;
-      -message_filters, used to synchronize the speedL_stamped, speedR_stamped and steer_stamped topics coming from the bag file.
-      -dynamic_reconfigure, necessary to implement the dynamic reconfiguration of the x,y coordinates and to switch the Odometry type.
-  2.the custom messages reference and dependencies;
-  3.the dynamic reconfigure file reference;
-  4.the node dependencies for custom messages and message filters.
+  1. the packages required by the node:
+      - nav_msgs, used for the Odometry class;
+      - tf, used to publish the tf;
+      - message_generation, necessary to create and use custom messages;
+      - message_filters, used to synchronize the speedL_stamped, speedR_stamped and steer_stamped topics coming from the bag file.
+      - dynamic_reconfigure, necessary to implement the dynamic reconfiguration of the x,y coordinates and to switch the Odometry type.
+  2. the custom messages reference and dependencies;
+  3. the dynamic reconfigure file reference;
+  4. the node dependencies for custom messages and message filters.
 
--package.xml : the file contains all the dependencies necessary for the node:
-    -message_filters
-    -custom_messages
-    -dynamic_reconfigure
+- package.xml : the file contains all the dependencies necessary for the node:
+    - message_filters
+    - custom_messages
+    - dynamic_reconfigure
 
--cfg/Parameters.cfg : this file is used for the dynamic reconfiguration of the node for x,y and Odometry type.
+- cfg/Parameters.cfg : this file is used for the dynamic reconfiguration of the node for x,y and Odometry type.
   It contains an enum parameter for the Odometry type and two int parameters for the x,y coordinates.
 
--msg/floatStamped.msg :
+- msg/floatStamped.msg :
   file that declares the type of steer_stamped, speedL_stamped,speedR_stamped.
 
--msg/customOdometry.msg :
+- msg/customOdometry.msg :
   file used to declare a custom structure made of a string odom_type that contains the Odometry type currently computed and 
   a nav_msgs/Odometry that contains the Odometry computed.
 
--src/odometry_node.cpp :
+- src/odometry_node.cpp :
   by receiving data from the bag files, this node computes the odometry and publishes it in:
      -the /odom topic as nav_msgs/Odometry;
      -the /tf topic as tf;
@@ -68,18 +68,18 @@ The program is run through the ROS middleware.
     -frame_id: odom
     -child_frame_id: car
 
-#dynamic_reconfigure parameters:
-    -x, int for the x coordinate;
-    -y, int for the y coordinate;
-    -string_type, enum for the odometry type, can be either "ackerman" or "differential".
+# dynamic_reconfigure parameters:
+    - x, int for the x coordinate;
+    - y, int for the y coordinate;
+    - string_type, enum for the odometry type, can be either "ackerman" or "differential".
 
-#How to run the project:
+# How to run the project:
 
-    -after compiling (catkin_make), the odometry_node will be created;
-    -run the node as follows: rosrun robotics_project odometry_node
-    -the node will give an acknowledgement saying "I'm alive";
-    -run the bag file -> the node will start computing the rearWheelSpeed and angularSpeed;
-    -the results can be shown in rviz by adding the tf and odometry tabs and configuring the fixed frame as "odom" and the Odometry topic as "odom".
+    - after compiling (catkin_make), the odometry_node will be created;
+    - run the node as follows: rosrun robotics_project odometry_node
+    - the node will give an acknowledgement saying "I'm alive";
+    - run the bag file -> the node will start computing the rearWheelSpeed and angularSpeed;
+    - the results can be shown in rviz by adding the tf and odometry tabs and configuring the fixed frame as "odom" and the Odometry topic as "odom".
 
-#Notes:
+# Notes:
 I decided not to create directly a reset parameter for x,y, as it is easily feasable by setting the x,y int parameters to 0,0.
