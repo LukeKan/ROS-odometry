@@ -45,14 +45,14 @@ The program is run through the ROS middleware.
       -the /custom_odom topic as customOdometry (custom message).
   Also, it provides the dynamic reconfiguration of the odom type and x,y coordinates using the Parameters.cfg parameters.
 
-#The workflow
-1.main:
+# The workflow
+1. main:
   - Init of the node as "odometry_node";  
   - Subscribe to the topics speedL_stamped, speedR_stamped and steer_stamped and synchronize them inside a message_filter with ApproximatedTimestamp as their stamp is not very accurate;
   - Binds the message_filter to the function odometryCalculus;
   - Create and bind the dynamic_reconfigure server to the function dinamicReconfigure.
 
-2.odometryCalculus:
+2. odometryCalculus:
     -checks if the odom_type is either ackerman or differential and computes with the specified odom_type the rearWheelSpeed and the angularSpeed of the car;
     -integrates the rearWheelSpeed and angularSpeed with the Runge-Kutta approximation in order to get x,y,theta;
     -creates the Odometry variable and adds in it the linear and angular speed and the pose of the car;
@@ -60,7 +60,7 @@ The program is run through the ROS middleware.
     -creates the tf variable and adds the pose;
     -publishes the three messages.
 
-3.dinamicReconfigure:
+3. dinamicReconfigure:
     -updates the x,y and odom_type with the reconfiguration parameters received.
 
 
